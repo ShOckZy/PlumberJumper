@@ -1,5 +1,6 @@
 import pygame,sys
 from pygame.locals import *
+from Tkconstants import FALSE
 
 pygame.init()
 menu = pygame.image.load("menu/iniciosinbotones.png")
@@ -11,15 +12,28 @@ botonsalir2 = pygame.image.load("menu/botonsalir2.png")
 botonajustes = pygame.image.load("menu/botonajustes.png")
 botonajustes2 = pygame.image.load("menu/botonajustes2.png")
 clic = pygame.mixer.Sound("sonidos/clic.ogg")
+sonidofondo = pygame.mixer.music.load("sonidos/fondo.mp3")
+bala = pygame.image.load("nivel1/arma.png")
 reloj = pygame.time.Clock()
+aux=1
+NEGRO = (0,0,0)
 
 MposX=20
+MposY=460
+
 cont=6
 direc=True
 i=0
 xixf={}#xinicial y xfinal
 Rxixf={}
 
+parabola={}
+salto = False
+ 
+salto_Par=False
+
+pygame.mixer.music.play(100)
+pygame.mixer.music.set_volume(.25)
 def imagen(filename, transparent=False):
         try: image = pygame.image.load(filename)
         except pygame.error, message:
@@ -34,22 +48,25 @@ def teclado():
     teclado = pygame.key.get_pressed()
 
     global MposX
-    global cont, direc
+    global cont, direc,salto, salto_Par
+    
+    if teclado[K_SPACE] and teclado[K_RIGHT] and salto_Par==False:
+        salto_Par=True
+    elif teclado[K_SPACE] and teclado[K_LEFT] and salto_Par==False:
+        salto_Par=True
 
-
-    if teclado[K_RIGHT]:
+    elif teclado[K_RIGHT]and salto==False and salto_Par==False:
         MposX+=2
         cont+=1
         direc=True
-    elif teclado[K_LEFT]:
+    elif teclado[K_LEFT]and salto==False and salto_Par==False:
         MposX-=2
         cont+=1
         direc=False
-    elif teclado[K_q]:
-        #SALTO
-        MposX-=2
-    #else :
-         #cont=6
+    elif teclado[K_SPACE] and salto==False and salto_Par==False:
+        salto=True
+    else :
+         cont=6
 
     return
 def sprite():
@@ -83,6 +100,19 @@ def sprite():
         cont=0
 
     return
+class Proyectil(pygame.sprite.Sprite):
+    """ Esta clase representa al proyectil . """
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        #self.sheet = pygame.image.load("nivel1/proyectil.png")
+        self.image = bala
+        self.rect=self.image.get_rect()
+
+
+    def update(self,screen):
+        """ Desplaza al proyectil. """
+        self.rect.x += 5
+        screen.blit(self.image,self.rect)
 
 class Boton(pygame.sprite.Sprite):
     def __init__(self,botonjugar,botonjugar2,x=360,y=300):
@@ -107,11 +137,11 @@ class cursor(pygame.Rect):
 
 def main():
     pygame.init()
+    pygame.mixer.music.set_volume(.25)
     pygame.display.set_caption("Plumber Jumper")
     screen = pygame.display.set_mode((1080,720)) 
     pygame.display.set_icon(icon_surf)
     cursor1=cursor()
-
 
     boton1=Boton(botonjugar,botonjugar2,360,300)
     boton2=Boton(botonsalir,botonsalir2,360,450)
@@ -185,6 +215,12 @@ def Ajustes():
                 if cursor1.colliderect(boton4.rect):
                     clic.play()
                     clic.set_volume(1)
+                if cursor1.colliderect(boton6.rect):
+                    clic.play()
+                    pygame.mixer.music.set_volume(.25)
+                if cursor1.colliderect(boton7.rect):
+                    clic.play()
+                    pygame.mixer.music.set_volume(0)
             if event.type == QUIT:
                 pygame.quit()
                 sys.exit(0)
@@ -276,16 +312,29 @@ def nivel1():
     pygame.display.set_caption("Plumber Jumper: Nivel 1")
 
     #Sprite
-    mario = imagen("personajes/plomero/plomeroninja.png",True)
-    mario_inv=pygame.transform.flip(mario,True,False);
+    plom = imagen("personajes/plomero/plomeroninja.png",True)
+    plom_inv=pygame.transform.flip(plom,True,False);
     #Finsprite
 
+    #Salto
+    global salto_Par  
+    bajada=False
+    bajada_Par=False
+    #Finsalto
 
     reloj1=pygame.time.Clock()
 
     boton1=Boton(botonpausa,botonpausa2,980,10)
 
+    proyectil = Proyectil()
+
     cursor1=cursor()
+    pygame.mixer.music.set_volume(0)
+
+    lista_proyectiles=pygame.sprite.Group()
+
+    movimientobala=False
+
     while True:
         sprite()
         teclado()
@@ -297,11 +346,84 @@ def nivel1():
         screen.blit(barraenemigo,(832,80))
 
         screen.blit(llavedeagua,(970,510))
-        if direc==True:
-            screen.blit(mario, ( MposX, 460),(xixf[i]))
-        if direc==False:
-            screen.blit(mario_inv, ( MposX, 460),(Rxixf[i]))
+        #if direc==True:
+         #   screen.blit(plom, ( MposX, MposY),(xixf[i]))
+        #if direc==False:
+         #   screen.blit(plom_inv, ( MposX, MposY),(Rxixf[i]))
 
+        #Movimiento sin salto
+        global MposX,MposY,salto
+       
+        if direc==True and salto==False:
+            screen.blit(plom, ( MposX, MposY),(xixf[i]))
+   
+        if direc==False and salto==False:
+            screen.blit(plom_inv, ( MposX, MposY),(Rxixf[i]))
+       
+       
+       #salto normal
+        if salto==True and movimientobala==False:            
+           
+            if direc==True and movimientobala==False:
+                screen.blit(plom, ( MposX, MposY),(xixf[2]))
+            if direc==False and movimientobala==False:
+                screen.blit(plom_inv, ( MposX, MposY),(Rxixf[2]))  
+           
+            if bajada==False:
+                MposY-=4
+               
+            if bajada==True:
+                MposY+=4              
+           
+            if MposY==340:
+                bajada=True
+           
+            if MposY==460:
+                bajada=False
+                salto=False
+      
+
+        #SALTO PARABOLICO
+        if salto_Par==True and direc==True and movimientobala==False:            
+           
+            screen.blit(plom, ( MposX, MposY),(xixf[2]))
+           
+            if bajada_Par==False:
+                MposY-=3
+                MposX+=2
+               
+            if bajada_Par==True:
+                MposY+=3
+                MposX+=2
+           
+            if MposY==340:
+                bajada_Par=True
+           
+            if MposY==460:
+                bajada_Par=False
+                salto_Par=False
+        elif salto_Par==True and direc==FALSE and movimientobala==False:            
+           
+            screen.blit(plom_inv, ( MposX, MposY),(Rxixf[2]))
+           
+            if bajada_Par==False:
+                MposY-=3
+                MposX-=2
+               
+            if bajada_Par==True:
+                MposY+=3
+                MposX-=2
+           
+            if MposY==340:
+                bajada_Par=True
+           
+            if MposY==460:
+                bajada_Par=False
+                salto_Par=False
+        if movimientobala==True:
+            screen.blit(plom, ( MposX, MposY),(xixf[1]))
+            movimientobala=False
+        #Fin salto
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -309,17 +431,22 @@ def nivel1():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     pausa()
+                if event.key == pygame.K_x:
+                    movimientobala=True
+                    proyectil = Proyectil()
+                    proyectil.rect.x= MposX+50
+                    proyectil.rect.y= MposY+80
+                    lista_proyectiles.add(proyectil)
+
             if event.type==pygame.MOUSEBUTTONDOWN:
                 if cursor1.colliderect(boton1.rect):
                     clic.play()
                     pausa()
-           
-
-        #pygame.display.flip()
-        print (event)
+        #proyectil.update(screen)
+        lista_proyectiles.update(screen)
+        #print (event)
         boton1.update(screen,cursor1)
-        #screen.blit(plomero,(x,y))
-        reloj1.tick(80)
+        reloj1.tick(100)
         cursor1.update()
         pygame.display.update()
 def pausa():
@@ -370,7 +497,6 @@ def pausa():
         reloj1.tick(30)
         cursor1.update()
         pygame.display.update()
-
 main()
 
 
